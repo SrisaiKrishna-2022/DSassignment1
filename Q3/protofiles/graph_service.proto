@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package graph;
+
+option go_package = "graphpb";
+
+message NodeList {
+  repeated string neighbors = 1;
+}
+
+message SubmitGraphRequest {
+  // A unique id per client (e.g., "clientA", "clientB").
+  string client_id = 1;
+
+  // Adjacency list: node -> list of neighbors.
+  // Treat the graph as undirected; duplicate edges are fine.
+  map<string, NodeList> adjacency = 2;
+}
+
+message SubmitGraphResponse {
+  // Total number of nodes in the client's submitted graph (after parsing).
+  int32 client_nodes = 1;
+  // Total number of edges in the client's submitted graph.
+  int32 client_edges = 2;
+
+  // Current union graph stats after this submission.
+  int32 union_nodes = 3;
+  int32 union_edges = 4;
+}
+
+message QueryK {
+  int32 k = 1;
+}
+
+message BoolReply {
+  bool ok = 1;
+}
+
+message ResetRequest {}
+message ResetResponse {
+  bool cleared = 1;
+}
+
+service GraphService {
+  // Upload/replace a client's graph. Safe to call at any time (async arrivals).
+  rpc SubmitGraph(SubmitGraphRequest) returns (SubmitGraphResponse);
+
+  // True if the union graph has an independent set of size >= k.
+  rpc HasIndependentSet(QueryK) returns (BoolReply);
+
+  // True if the union graph has a matching of size >= k.
+  rpc HasMatching(QueryK) returns (BoolReply);
+
+  // Optional convenience: clears all stored client graphs.
+  rpc Reset(ResetRequest) returns (ResetResponse);
+}
